@@ -1,28 +1,101 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
+import img from './training/train.jpeg';
+import train from './training/train.jpeg';
+import FileInput from './File';
+//Import Ml5
+
+import * as ml5 from "ml5";
 
 class App extends Component {
+
+  state = {
+    predictions: []  // Set the empty array predictions state
+  }
+
+  trainData(){
+
+    let features = ml5.featureExtractor('MobileNet');
+    const classifier = features.classification();
+
+
+    //train
+    classifier.addImage(train, 'train');
+    classifier.addImage(img, 'car');
+   
+
+    //train our model
+    classifier.train();
+
+    classifier.classify(img, gotResult);
+
+function gotResult(labels) {
+  console.log(labels);
+}
+  }
+
+
+  setPredictions = (pred) => {
+    // Set the prediction state with the model predictions
+    this.setState({
+      predictions: pred
+    });
+  }
+
+  classifyImg = () => {
+    // Initialize the Image Classifier method with MobileNet
+    const classifier = ml5.imageClassifier('MobileNet', modelLoaded);
+    // When the model is loaded
+    function modelLoaded() {
+      console.log('Model Loaded!');
+    }
+    // Put the image to classify inside a variable
+    const image = document.getElementById('image');
+    // Make a prediction with a selected image
+    classifier.predict(image, 5, function(err, results) {
+    // Return the results
+      return results;
+    })
+      .then((results) => {
+        // Set the predictions in the state
+        this.setPredictions(results)
+      })
+  }
+
+  componentDidMount(){
+    // once the component has mount, start the classification
+    this.classifyImg();
+
+    //our own model
+
+    // this.trainData();
+  }
+
   render() {
+    // First set the predictions to a default value while loading
+    let predictions = (<div className="loader"></div>);
+    // Map over the predictions and return each prediction with probability
+    if(this.state.predictions.length > 0){
+      predictions = this.state.predictions.map((pred, i) => {
+        let { className, probability } = pred;
+        // round the probability with 2 decimal
+        probability = Math.floor(probability * 10000) / 100 + "%";
+        return (
+          <div key={ i + "" }>{ i+1 }. Prediction: { className } at { probability } </div>
+        )
+      })
+    }
+	  
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+      <FileInput/>
+      <h1>Image classification with ML5.js</h1>
+      <img src={ img } id="image" width="400" alt="" />
+      { predictions }
       </div>
     );
   }
 }
 
 export default App;
+
